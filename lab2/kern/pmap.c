@@ -311,7 +311,7 @@ page_alloc(int alloc_flags)
 	}
 	struct Page *alloc_page=page_free_list;
 	page_free_list=alloc_page->pp_link;
-	alloc->pp_link=NULL;
+	alloc_page->pp_link=NULL;
 	//Frank:why not setting pp_ref here?
 	if (alloc_flags & ALLOC_ZERO){
 		memset(page2kva(alloc_page),0,PGSIZE);
