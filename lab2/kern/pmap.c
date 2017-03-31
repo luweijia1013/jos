@@ -95,6 +95,7 @@ boot_alloc(uint32_t n)
 	if (!nextfree) {
 		extern char end[];
 		nextfree = ROUNDUP((char *) end, PGSIZE);
+		result=end;
 	}
 
 	// Allocate a chunk large enough to hold 'n' bytes, then update
@@ -132,12 +133,13 @@ mem_init(void)
 	i386_detect_memory();
 
 	// Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
-
+	//panic("mem_init: This function is not finished\n");
+	cprintf("Frank checkpoint1\n");
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
 	kern_pgdir = (pde_t *) boot_alloc(PGSIZE);
 	memset(kern_pgdir, 0, PGSIZE);
+	cprintf("Frank checkpoint2\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// Recursively insert PD in itself as a page table, to form
@@ -163,7 +165,7 @@ mem_init(void)
 	// }
 	// pages = FirstPage;
 	pages = (struct Page *)boot_alloc(npages * sizeof(struct Page));
-
+	cprintf("Frank checkpoint3\n");
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -171,9 +173,11 @@ mem_init(void)
 	// particular, we can now map memory using boot_map_region
 	// or page_insert
 	page_init();
-
+	cprintf("Frank checkpoint4\n");
 	check_page_free_list(1);
+	cprintf("Frank checkpoint5\n");
 	check_page_alloc();
+	cprintf("Frank checkpoint6\n");
 	check_page();
 
 	//////////////////////////////////////////////////////////////////////
@@ -328,7 +332,7 @@ page_free(struct Page *pp)
 {
 	// Fill this function in
 	if(pp->pp_ref!=0){
-		printf("free a page with ref not equal to 0\n");
+		cprintf("free a page with ref not equal to 0\n");
 	}
 	pp->pp_link=page_free_list;
 	page_free_list=pp;
@@ -507,8 +511,9 @@ check_page_free_list(bool only_low_memory)
 
 	if (!page_free_list)
 		panic("'page_free_list' is a null pointer!");
-
+	cprintf("Frank check_pg_fr_ls:checkpoint1\n");
 	if (only_low_memory) {
+		cprintf("Frank check_pg_fr_ls:checkpoint2\n");
 		// Move pages with lower addresses first in the free
 		// list, since entry_pgdir does not map all pages.
 		struct Page *pp1, *pp2;
@@ -525,11 +530,12 @@ check_page_free_list(bool only_low_memory)
 
 	// if there's a page that shouldn't be on the free list,
 	// try to make sure it eventually causes trouble.
+	cprintf("Frank check_pg_fr_ls:checkpoint3\n");
 	for (pp = page_free_list; pp; pp = pp->pp_link){
 		if (PDX(page2pa(pp)) < pdx_limit)
 			memset(page2kva(pp), 0x97, 128);
 	}
-
+	cprintf("Frank check_pg_fr_ls:checkpoint4\n");
 	first_free_page = (char *) boot_alloc(0);
 	for (pp = page_free_list; pp; pp = pp->pp_link) {
 		// check that we didn't corrupt the free list itself
