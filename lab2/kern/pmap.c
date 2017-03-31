@@ -95,7 +95,6 @@ boot_alloc(uint32_t n)
 	if (!nextfree) {
 		extern char end[];
 		nextfree = ROUNDUP((char *) end, PGSIZE);
-		result=end;
 	}
 
 	// Allocate a chunk large enough to hold 'n' bytes, then update
@@ -103,13 +102,11 @@ boot_alloc(uint32_t n)
 	// to a multiple of PGSIZE.
 	//
 	// LAB 2: Your code here.
-	else{
-		result = nextfree;
-		// for (; n; n-= PGSIZE){
-		// 	nextfree += PGSIZE;
-		// }
-		nextfree = ROUNDUP(result + n, PGSIZE);
-	}
+	result = nextfree;
+	// for (; n; n-= PGSIZE){
+	// 	nextfree += PGSIZE;
+	// }
+	nextfree = ROUNDUP(result + n, PGSIZE);
 
 	return result;
 }
@@ -277,28 +274,14 @@ page_init(void)
 		page_free_list = &pages[i];
 	}
 	extern char end[];
-	//cprintf("Frank test: %d\n",ROUNDUP(,PGSIZE)/PGSIZE);
-	//cprintf("Frank test %d\n",(int)(end-KERNBASE)/PGSIZE);
-	//cprintf("Frank test i :%d+%d!=313\n",EXTPHYSMEM/PGSIZE,ROUNDUP((char*)end-KERNBASE+PGSIZE+npages*sizeof(struct Page),PGSIZE)/PGSIZE);
-	for(i=ROUNDUP((int)(end-KERNBASE)+PGSIZE+npages*sizeof(struct Page),PGSIZE)/PGSIZE;i<npages;i++){
+	//first use EXTPHYSMEM/PGSIZE+PGSIZE+npages*sizeof(), it's wrong because it forgets the part from EXTPHYSMEM to end (refers to the memory of kernel itself)
+	for(i=ROUNDUP((int)(ROUNDUP((char*)end,PGSIZE)-KERNBASE)+PGSIZE+npages*sizeof(struct Page),PGSIZE)/PGSIZE;i<npages;i++){
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
-	// struct Page *free_list_now = page_free_list;
-	// size_t page_count_num = 0;
-	// // assume npages>EXTPHYSMEM/PGSIZE + 1;
-	// for(;free_list_now;free_list_now=free_list_now->pp_link, page_count_num ++){
-	// 	// physical page 0
-	// 	if(free_list_now->pp_link == NULL){
-	// 		free_list_now->pp_ref = 1;
-	// 	}
-	// 	// physical page [IOPHYSMEM/PGSIZE,EXTPHYSMEM/PGSIZE)+[EXTPHYSMEM/PGSIZE,EXTPHYSMEM/PGSIZE+1)
-	// 	else if(page_count_num >= npages - EXTPHYSMEM/PGSIZE - 1 && page_count_num < npages - IOPHYSMEM/PGSIZE){
-	// 		free_list_now->pp_ref = 1;
-	// 	}
-	// }
-	chunk_list = NULL;
+	chunk_list = NULL;//Frank what's that?
+
 }
 
 //
