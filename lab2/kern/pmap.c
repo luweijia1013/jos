@@ -276,7 +276,11 @@ page_init(void)
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
-	for(i=PGNUM(PADDR(boot_alloc(0)));i<npages;i++){
+	extern char end[];
+	//cprintf("Frank test: %d\n",ROUNDUP(,PGSIZE)/PGSIZE);
+	//cprintf("Frank test %d\n",(int)(end-KERNBASE)/PGSIZE);
+	//cprintf("Frank test i :%d+%d!=313\n",EXTPHYSMEM/PGSIZE,ROUNDUP((char*)end-KERNBASE+PGSIZE+npages*sizeof(struct Page),PGSIZE)/PGSIZE);
+	for(i=ROUNDUP((int)(end-KERNBASE)+PGSIZE+npages*sizeof(struct Page),PGSIZE)/PGSIZE;i<npages;i++){
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
