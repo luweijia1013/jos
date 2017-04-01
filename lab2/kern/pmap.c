@@ -114,7 +114,7 @@ boot_alloc(uint32_t n)
 // Set up a two-level page table:
 //    kern_pgdir is its linear (virtual) address of the root
 //
-// This function only sets up the kernel part of the address space
+// This function only sets up the kernel part of the address space   //Frank: address [UTOP,KERNBASE)?
 // (ie. addresses >= UTOP).  The user part of the address space
 // will be setup later.
 //
@@ -131,12 +131,12 @@ mem_init(void)
 
 	// Remove this line when you're ready to test this function.
 	//panic("mem_init: This function is not finished\n");
-	cprintf("Frank checkpoint1\n");
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
 	kern_pgdir = (pde_t *) boot_alloc(PGSIZE);
 	memset(kern_pgdir, 0, PGSIZE);
-	cprintf("Frank checkpoint2\n");
+	//Frank: why kern_pgdir can be set, boot_alloc i think just adjusts
+	//Frank: the position of nextfree but not truely allocates it from os.
 
 	//////////////////////////////////////////////////////////////////////
 	// Recursively insert PD in itself as a page table, to form
@@ -145,7 +145,7 @@ mem_init(void)
 	// following two lines.)
 
 	// Permissions: kernel R, user R
-	kern_pgdir[PDX(UVPT)] = PADDR(kern_pgdir) | PTE_U | PTE_P;
+	kern_pgdir[PDX(UVPT)] = PADDR(kern_pgdir) | PTE_U | PTE_P;//Frank:don't understand!
 
 	//////////////////////////////////////////////////////////////////////
 	// Allocate an array of npages 'struct Page's and store it in 'pages'.
@@ -154,15 +154,7 @@ mem_init(void)
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
 
-	// size_t Pagestobeall = npages;
-	// struct Page *FirstPage = pages;
-	// for(;Pagestobeall>1&&pages;Pagestobeall--,pages=pages->pp_link){
-	// 	struct Page *NewPage;
-	// 	pages->pp_link = NewPage;
-	// }
-	// pages = FirstPage;
 	pages = (struct Page *)boot_alloc(npages * sizeof(struct Page));
-	cprintf("Frank checkpoint3\n");
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -170,18 +162,17 @@ mem_init(void)
 	// particular, we can now map memory using boot_map_region
 	// or page_insert
 	page_init();
-	cprintf("Frank checkpoint4\n");
 	check_page_free_list(1);
-	cprintf("Frank checkpoint5\n");
 	check_page_alloc();
-	cprintf("Frank checkpoint6\n");
+	cprintf("Frank checkpoint 1\n");
 	check_page();
+	cprintf("Frank checkpoint 2\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
 
 	//////////////////////////////////////////////////////////////////////
-	// Map 'pages' read-only by the user at linear address UPAGES
+	// Map 'pages' rea -only by the user at linear address UPAGES
 	// Permissions:
 	//    - the new image at UPAGES -- kernel R, user R
 	//      (ie. perm = PTE_U | PTE_P)
@@ -274,6 +265,7 @@ page_init(void)
 		page_free_list = &pages[i];
 	}
 	extern char end[];
+	cprintf("Frank test: %08lx - %08lx = %d ?",ROUNDUP((char*)end,PGSIZE),KERNBASE,(ROUNDUP((char*)end,PGSIZE)-KERNBASE));
 	//first use EXTPHYSMEM/PGSIZE+PGSIZE+npages*sizeof(), it's wrong because it forgets the part from EXTPHYSMEM to end (refers to the memory of kernel itself)
 	for(i=ROUNDUP((int)(ROUNDUP((char*)end,PGSIZE)-KERNBASE)+PGSIZE+npages*sizeof(struct Page),PGSIZE)/PGSIZE;i<npages;i++){
 		pages[i].pp_ref = 0;
@@ -499,9 +491,7 @@ check_page_free_list(bool only_low_memory)
 
 	if (!page_free_list)
 		panic("'page_free_list' is a null pointer!");
-	cprintf("Frank check_pg_fr_ls:checkpoint1\n");
 	if (only_low_memory) {
-		cprintf("Frank check_pg_fr_ls:checkpoint2\n");
 		// Move pages with lower addresses first in the free
 		// list, since entry_pgdir does not map all pages.
 		struct Page *pp1, *pp2;
@@ -518,12 +508,10 @@ check_page_free_list(bool only_low_memory)
 
 	// if there's a page that shouldn't be on the free list,
 	// try to make sure it eventually causes trouble.
-	cprintf("Frank check_pg_fr_ls:checkpoint3\n");
 	for (pp = page_free_list; pp; pp = pp->pp_link){
 		if (PDX(page2pa(pp)) < pdx_limit)
 			memset(page2kva(pp), 0x97, 128);
 	}
-	cprintf("Frank check_pg_fr_ls:checkpoint4\n");
 	first_free_page = (char *) boot_alloc(0);
 	for (pp = page_free_list; pp; pp = pp->pp_link) {
 		// check that we didn't corrupt the free list itself
