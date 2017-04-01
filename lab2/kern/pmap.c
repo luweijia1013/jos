@@ -358,7 +358,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
 	// if the page table the va refers to does not exist
-	if(pgdir[PDX(va)] == NULL){
+	if( (physaddr_t)pgdir[PDX(va)] == NULL){
 		//if the page table does not exist and don't want to create it
 		if(!create){
 			return NULL;
@@ -399,8 +399,8 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	pte_t* pgtable_now = NULL;
 	size_t add_interval=0;
 	for(;size;size-=PGSIZE,add_interval+=PGSIZE){
-		pgtable_now=pgdir_walk(pgdir,va+add_interval,1);
-		assert(pgtable_now & 0x3ff == 0); //the lowest 12 bits(flag bit)should be clear
+		pgtable_now=pgdir_walk(pgdir,(uintptr_t)(va+add_interval/sizeof(uintptr_t)),1);
+		assert((physaddr_t)pgtable_now & 0x3ff == 0); //the lowest 12 bits(flag bit)should be clear
 		pgtable_now[PTX(va+add_interval)]=pa|PTE_P;
 	}
 }
@@ -483,7 +483,7 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 	}
 	pte_t pg_now;
 	//no page mapped
-	if((pg_now=pgtable_now[PTX(va)])==NULL){
+	if(((physaddr_t)pg_now=pgtable_now[PTX(va)])==NULL){
 		return NULL;
 	}
 	if(pte_store!=0){
@@ -511,12 +511,12 @@ void
 page_remove(pde_t *pgdir, void *va)
 {
 	// Fill this function in
-	if(pgdir_walk(pgdir,va,0)==NULL || pgdir_walk(pgdir,va,0)[PTX(va)]==NULL){
+	if(pgdir_walk(pgdir,va,0)==NULL || (physaddr_t)pgdir_walk(pgdir,va,0)[PTX(va)]==NULL){
 		return;
 	}
 	pte_t *addr_phy = 0;
 	struct Page *page_now = page_lookup(pgdir,va,&addr_phy);//pte_store?
-	page_decref(pg_now);
+	page_decref(page_now);
 	*addr_phy=0;
 	tlb_invalidate(pgdir,va);
 	return;
