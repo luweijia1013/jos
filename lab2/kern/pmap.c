@@ -126,6 +126,7 @@ mem_init(void)
 	uint32_t cr0;
 	size_t n;
 
+	cprintf("********** Frank's lab2 test interval(start of mem_init) ***********\n\n\n\n");
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
 
@@ -265,7 +266,7 @@ page_init(void)
 		page_free_list = &pages[i];
 	}
 	extern char end[];
-	cprintf("Frank test: %08lx - %08lx = %d ?",ROUNDUP((char*)end,PGSIZE),KERNBASE,(ROUNDUP((char*)end,PGSIZE)-KERNBASE));
+	//cprintf("Frank test: %08lx - %08lx = %d ?\n",ROUNDUP((char*)end,PGSIZE),KERNBASE,(ROUNDUP((char*)end,PGSIZE)-KERNBASE));
 	//first use EXTPHYSMEM/PGSIZE+PGSIZE+npages*sizeof(), it's wrong because it forgets the part from EXTPHYSMEM to end (refers to the memory of kernel itself)
 	for(i=ROUNDUP((int)(ROUNDUP((char*)end,PGSIZE)-KERNBASE)+PGSIZE+npages*sizeof(struct Page),PGSIZE)/PGSIZE;i<npages;i++){
 		pages[i].pp_ref = 0;
@@ -356,7 +357,28 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-	return NULL;
+	// if the page table the va refers to does not exist
+	if(pgdir[PDX(va)] == NULL){
+		//if the page table does not exist and don't want to create it
+		if(!create){
+			return NULL;
+		}
+		//if the page table does not exist but want to create it
+		else{
+			struct Page *newpage; 
+			//allocation fails
+			if((newpage = page_alloc(1)) == NULL) return NULL;
+			//allocation succeeds
+			newpage->pp_ref ++;
+			pgdir[PDX(va)]=page2pa(newpage);//Frank: how about the 0-11 bit (as the physical address of a page table only needs 20 bits to express)
+			return page2kva(newpage); //Frank: return virtual address ?(or maybe physical?)
+		}
+	}
+	else{
+		uintptr_t ptaddr_phy = PTE_ADDR(pgdir[PDX(va)]); //pte_addr() clear the flag bit
+		return page2kva(pa2page(ptaddr_phy));
+	}
+	
 }
 
 //
@@ -373,6 +395,14 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+	assert(size%PGSIZE==0);
+	pte_t* pgtable_now = NULL;
+	size_t add_interval=0;
+	for(;size;size-=PGSIZE,add_interval+=PGSIZE){
+		pgtable_now=pgdir_walk(pgdir,va+add_interval,1);
+		assert(pgtable_now & 0x3ff == 0); //the lowest 12 bits(flag bit)should be clear
+		pgtable_now[PTX(va+add_interval)]=pa|PTE_P;
+	}
 }
 
 //
@@ -419,6 +449,15 @@ int
 page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm)
 {
 	// Fill this function in
+	pte_t *pgtable_now=pgdir_walk(pgdir,va,1);
+	if(!pgtable_now){
+		return -E_NO_MEM;
+	}
+	if(pgtable_now[PTX(va)]){
+		page_remove(pgdir,va);
+	}
+	pgtable_now[PTX(va)]=page2pa(pp)|perm|PTE_P;
+	pp->pp_ref++;
 	return 0;
 }
 
@@ -437,7 +476,20 @@ struct Page *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
 	// Fill this function in
-	return NULL;
+	pte_t *pgtable_now;
+	//no page table mapped(of course no page mapped)
+	if((pgtable_now=pgdir_walk(pgdir,va,0))==NULL){
+		return NULL;
+	}
+	pte_t pg_now;
+	//no page mapped
+	if((pg_now=pgtable_now[PTX(va)])==NULL){
+		return NULL;
+	}
+	if(pte_store!=0){
+		*pte_store = &pg_now;
+	}
+	return pa2page(PTE_ADDR(pg_now));
 }
 
 //
@@ -459,6 +511,15 @@ void
 page_remove(pde_t *pgdir, void *va)
 {
 	// Fill this function in
+	if(pgdir_walk(pgdir,va,0)==NULL || pgdir_walk(pgdir,va,0)[PTX(va)]==NULL){
+		return;
+	}
+	pte_t *addr_phy = 0;
+	struct Page *page_now = page_lookup(pgdir,va,&addr_phy);//pte_store?
+	page_decref(pg_now);
+	*addr_phy=0;
+	tlb_invalidate(pgdir,va);
+	return;
 }
 
 //
