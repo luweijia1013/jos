@@ -166,7 +166,6 @@ mem_init(void)
 	check_page_free_list(1);
 	check_page_alloc();
 	check_page();
-	cprintf("\nFrank checkpoint 1\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -179,12 +178,12 @@ mem_init(void)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
 	size_t i;
-	for(i=0;i<ROUNDUP(npages*sizeof(struct Page))/PGSIZE;i++){
-		if(PTE_ADDR(*pgdir_walk(kern_pgdir,UPAGES+i*PGSIZE,1)) != 0){
+	for(i=0;i<ROUNDUP(npages*sizeof(struct Page),PGSIZE)/PGSIZE;i++){
+		if(PTE_ADDR(*pgdir_walk(kern_pgdir,(void*)UPAGES+i*PGSIZE,1)) != 0){
 			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
 			continue;
 		}
-		page_insert(kern_pgdir,pa2page(PADDR(pages+i*PGSIZE),(void*)UPAGES+i*PGSIZE,PTE_U|PTE_P);
+		page_insert(kern_pgdir,pa2page(PADDR(pages+i*PGSIZE/sizeof(*pages))),(void*)UPAGES+i*PGSIZE,PTE_U);
 	}
 
 
@@ -199,12 +198,12 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
-	for(i=0;i<ROUNDUP(KSTKSIZE,PGSIZE);i++){
-		if(PTE_ADDR(*pgdir_walk(kern_pgdir,KSTACKTOPT-i*PGSIZE,1)) != 0){
+	for(i=0;i<ROUNDUP(KSTKSIZE,PGSIZE)/PGSIZE;i++){
+		if(PTE_ADDR(*pgdir_walk(kern_pgdir,(void*)KSTACKTOP-KSTKSIZE+i*PGSIZE,1)) != 0){
 			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
 			continue;
 		}
-		page_insert(kern_pgdir,pa2page(bootstack+i*PGSIZE),(void*)KSTACKTOP-KSTKSIZE+i*PGSIZE,PTE_U|PTE_P);//Frank:bootstack area grows up or down?
+		page_insert(kern_pgdir,pa2page((physaddr_t)PADDR((void*)bootstack+i*PGSIZE)),(void*)KSTACKTOP-KSTKSIZE+i*PGSIZE,PTE_W);//Frank:bootstack area grows up or down?
 	}
 
 	//////////////////////////////////////////////////////////////////////
@@ -216,11 +215,18 @@ mem_init(void)
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
 	for(i=0;i<(0xffffffff-KERNBASE)/PGSIZE;i++){
-		if(PTE_ADDR(*pgdir_walk(kern_pgdir,KSTACKTOPT-i*PGSIZE,1)) != 0){
+		if(PTE_ADDR(*pgdir_walk(kern_pgdir,(void*)KERNBASE+i*PGSIZE,1)) != 0){
 			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
 			continue;
 		}
-		page_insert(kern_pgdir,pa2page(PADDR(KERNBASE+i*PGSIZE)),(void*)KERNBASE+i*PGSIZE,PTE_U|PTE_P);
+		if(i<npages){
+			page_insert(kern_pgdir,pa2page(PADDR((void*)KERNBASE+i*PGSIZE)),(void*)KERNBASE+i*PGSIZE,PTE_W);
+			pa2page(PADDR((void*)KERNBASE+i*PGSIZE))->pp_ref--;
+		}
+		else{
+			page_insert(kern_pgdir,pa2page(PADDR((void*)KERNBASE)),(void*)KERNBASE,PTE_W);
+			pa2page(PADDR((void*)KERNBASE))->pp_ref--;
+		}
 	}
 
 	// Check that the initial page directory has been set up correctly.
@@ -234,7 +240,7 @@ mem_init(void)
 	// If the machine reboots at this point, you've probably set up your
 	// kern_pgdir wrong.
 	lcr3(PADDR(kern_pgdir));
-
+cprintf("\nFrank checkpoint 3\n");
 	check_page_free_list(0);
 	cprintf("\nFrank checkpoint 3\n");
 	// entry.S set the really important flags in cr0 (including enabling
