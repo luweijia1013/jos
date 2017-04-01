@@ -126,7 +126,7 @@ mem_init(void)
 	uint32_t cr0;
 	size_t n;
 
-	cprintf("********** Frank's lab2 test interval(start of mem_init) ***********\n\n\n\n");
+	cprintf("\n\n\n\n\n\n********** Frank's lab2 test interval(start of mem_init) ***********\n\n\n\n\n\n\n\n\n\n");
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
 
@@ -165,9 +165,8 @@ mem_init(void)
 	page_init();
 	check_page_free_list(1);
 	check_page_alloc();
-	cprintf("Frank checkpoint 1\n");
 	check_page();
-	cprintf("Frank checkpoint 2\n");
+	cprintf("\nFrank checkpoint 1\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -203,7 +202,7 @@ mem_init(void)
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
-
+	cprintf("\nFrank checkpoint 2\n");
 	// Switch from the minimal entry page directory to the full kern_pgdir
 	// page table we just created.	Our instruction pointer should be
 	// somewhere between KERNBASE and KERNBASE+4MB right now, which is
@@ -214,7 +213,7 @@ mem_init(void)
 	lcr3(PADDR(kern_pgdir));
 
 	check_page_free_list(0);
-
+	cprintf("\nFrank checkpoint 3\n");
 	// entry.S set the really important flags in cr0 (including enabling
 	// paging).  Here we configure the rest of the flags that we care about.
 	cr0 = rcr0();
@@ -224,6 +223,7 @@ mem_init(void)
 
 	// Some more checks, only possible after kern_pgdir is installed.
 	check_page_installed_pgdir();
+	cprintf("\nFrank checkpoint 4\n");
 }
 
 // --------------------------------------------------------------
@@ -358,7 +358,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
 	// if the page table the va refers to does not exist
-	if( (physaddr_t)pgdir[PDX(va)] == NULL){
+	if( (void*)pgdir[PDX(va)] == NULL){
 		//if the page table does not exist and don't want to create it
 		if(!create){
 			return NULL;
@@ -370,13 +370,13 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 			if((newpage = page_alloc(1)) == NULL) return NULL;
 			//allocation succeeds
 			newpage->pp_ref ++;
-			pgdir[PDX(va)]=page2pa(newpage);//Frank: how about the 0-11 bit (as the physical address of a page table only needs 20 bits to express)
-			return page2kva(newpage); //Frank: return virtual address ?(or maybe physical?)
+			pgdir[PDX(va)]=page2pa(newpage)|PTE_P|PTE_U|PTE_W;//Frank: how about the 0-11 bit (as the physical address of a page table only needs 20 bits to express)
+			return (pte_t*)KADDR(page2pa(newpage))+PTX(va); //Frank: return virtual address ?(or maybe physical?)
 		}
 	}
 	else{
 		uintptr_t ptaddr_phy = PTE_ADDR(pgdir[PDX(va)]); //pte_addr() clear the flag bit
-		return page2kva(pa2page(ptaddr_phy));
+		return (pte_t*)KADDR(ptaddr_phy)+PTX(va);//KADDR return a void* so that +PTX(va) will not multiply it by 4, therefore we need to change void* into pte_t*
 	}
 	
 }
@@ -396,12 +396,12 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 {
 	// Fill this function in
 	assert(size%PGSIZE==0);
-	pte_t* pgtable_now = NULL;
+	pte_t* pte_now = NULL;
 	size_t add_interval=0;
 	for(;size;size-=PGSIZE,add_interval+=PGSIZE){
-		pgtable_now=pgdir_walk(pgdir,(uintptr_t)(va+add_interval/sizeof(uintptr_t)),1);
-		assert((physaddr_t)pgtable_now & 0x3ff == 0); //the lowest 12 bits(flag bit)should be clear
-		pgtable_now[PTX(va+add_interval)]=pa|PTE_P;
+		pte_now=pgdir_walk(pgdir,(void*)(va+add_interval),1);
+		//assert((physaddr_t)pgtable_now & 0x3ff == 0); //the lowest 12 bits(flag bit)should be clear
+		*pte_now=(pa+add_interval)|perm|PTE_P;
 	}
 }
 
@@ -449,15 +449,15 @@ int
 page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm)
 {
 	// Fill this function in
-	pte_t *pgtable_now=pgdir_walk(pgdir,va,1);
-	if(!pgtable_now){
+	pte_t *pte_now=pgdir_walk(pgdir,va,1);
+	if(!pte_now){
 		return -E_NO_MEM;
 	}
-	if(pgtable_now[PTX(va)]){
+	pp->pp_ref++;//add ref first to deal with the corner-case
+	if(*pte_now){
 		page_remove(pgdir,va);
 	}
-	pgtable_now[PTX(va)]=page2pa(pp)|perm|PTE_P;
-	pp->pp_ref++;
+	*pte_now=page2pa(pp)|perm|PTE_P;
 	return 0;
 }
 
@@ -476,20 +476,19 @@ struct Page *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
 	// Fill this function in
-	pte_t *pgtable_now;
+	pte_t *pte_now;
 	//no page table mapped(of course no page mapped)
-	if((pgtable_now=pgdir_walk(pgdir,va,0))==NULL){
+	if((pte_now=pgdir_walk(pgdir,va,0))==NULL){
 		return NULL;
 	}
-	pte_t pg_now;
 	//no page mapped
-	if(((physaddr_t)pg_now=pgtable_now[PTX(va)])==NULL){
+	if(*pte_now==0){
 		return NULL;
 	}
 	if(pte_store!=0){
-		*pte_store = &pg_now;
+		*pte_store = pte_now;
 	}
-	return pa2page(PTE_ADDR(pg_now));
+	return pa2page(PTE_ADDR(*pte_now));
 }
 
 //
@@ -511,7 +510,7 @@ void
 page_remove(pde_t *pgdir, void *va)
 {
 	// Fill this function in
-	if(pgdir_walk(pgdir,va,0)==NULL || (physaddr_t)pgdir_walk(pgdir,va,0)[PTX(va)]==NULL){
+	if(pgdir_walk(pgdir,va,0)==NULL || (void*)*pgdir_walk(pgdir,va,0)==NULL){
 		return;
 	}
 	pte_t *addr_phy = 0;
@@ -742,11 +741,13 @@ static physaddr_t
 check_va2pa(pde_t *pgdir, uintptr_t va)
 {
 	pte_t *p;
-
+	//cprintf("\n Frank test: va=%08x\n",va );
 	pgdir = &pgdir[PDX(va)];
+	//cprintf("\n Frank test: pgdir=%08x\n",*pgdir );
 	if (!(*pgdir & PTE_P))
 		return ~0;
 	p = (pte_t*) KADDR(PTE_ADDR(*pgdir));
+	//cprintf("\n Frank test: p=%08x\n",p[PTX(va)] );
 	if (!(p[PTX(va)] & PTE_P))
 		return ~0;
 	return PTE_ADDR(p[PTX(va)]);
@@ -778,7 +779,8 @@ check_page(void)
 	assert((pp0 = page_alloc(0)));
 	assert((pp1 = page_alloc(0)));
 	assert((pp2 = page_alloc(0)));
-
+	//cprintf("\n Frank check_page() start!!\n\n\n");
+	//cprintf("\n Frank test: pp0=%08x,pp1=%08x,pp2=%08x\n",pp0,pp1,pp2);
 	assert(pp0);
 	assert(pp1 && pp1 != pp0);
 	assert(pp2 && pp2 != pp1 && pp2 != pp0);
@@ -792,18 +794,20 @@ check_page(void)
 
 	// there is no page allocated at address 0
 	assert(page_lookup(kern_pgdir, (void *) 0x0, &ptep) == NULL);
-
 	// there is no free memory, so we can't allocate a page table
 	assert(page_insert(kern_pgdir, pp1, 0x0, PTE_W) < 0);
+	//cprintf("\n Frank test: pp0=%08x,pp1=%08x,pp2=%08x\n",pp0,pp1,pp2);
 
 	// free pp0 and try again: pp0 should be used for page table
 	page_free(pp0);
 	assert(page_insert(kern_pgdir, pp1, 0x0, PTE_W) == 0);
+	//cprintf("\n Frank test: %08x=%08x\n",pp0,pa2page(PADDR(pgdir_walk(kern_pgdir,0x0,0))));
+	//cprintf("\n Frank test: %08x = %08x\n",PTE_ADDR(kern_pgdir[0]),page2pa(pp0)); //why physics address here 3ff000(about 4M but at the top of all phymem allocated which should be about 64M)
 	assert(PTE_ADDR(kern_pgdir[0]) == page2pa(pp0));
+	//cprintf("\n Frank test: %08x = %08x\n",check_va2pa(kern_pgdir, 0x0),page2pa(pp1));
 	assert(check_va2pa(kern_pgdir, 0x0) == page2pa(pp1));
 	assert(pp1->pp_ref == 1);
 	assert(pp0->pp_ref == 1);
-
 	// should be able to map pp2 at PGSIZE because pp0 is already allocated for page table
 	assert(page_insert(kern_pgdir, pp2, (void*) PGSIZE, PTE_W) == 0);
 	assert(check_va2pa(kern_pgdir, PGSIZE) == page2pa(pp2));
