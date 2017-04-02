@@ -178,6 +178,15 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
+	size_t i;
+	for(i=0;i<ROUNDUP(npages*sizeof(struct Page))/PGSIZE;i++){
+		if(PTE_ADDR(*pgdir_walk(kern_pgdir,UPAGES+i*PGSIZE,1)) != 0){
+			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
+			continue;
+		}
+		page_insert(kern_pgdir,pa2page(PADDR(pages+i*PGSIZE),(void*)UPAGES+i*PGSIZE,PTE_U|PTE_P);
+	}
+
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -190,6 +199,13 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
+	for(i=0;i<ROUNDUP(KSTKSIZE,PGSIZE);i++){
+		if(PTE_ADDR(*pgdir_walk(kern_pgdir,KSTACKTOPT-i*PGSIZE,1)) != 0){
+			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
+			continue;
+		}
+		page_insert(kern_pgdir,pa2page(bootstack+i*PGSIZE),(void*)KSTACKTOP-KSTKSIZE+i*PGSIZE,PTE_U|PTE_P);//Frank:bootstack area grows up or down?
+	}
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -199,6 +215,13 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
+	for(i=0;i<(0xffffffff-KERNBASE)/PGSIZE;i++){
+		if(PTE_ADDR(*pgdir_walk(kern_pgdir,KSTACKTOPT-i*PGSIZE,1)) != 0){
+			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
+			continue;
+		}
+		page_insert(kern_pgdir,pa2page(PADDR(KERNBASE+i*PGSIZE)),(void*)KERNBASE+i*PGSIZE,PTE_U|PTE_P);
+	}
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
