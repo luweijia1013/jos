@@ -123,7 +123,7 @@ boot_alloc(uint32_t n)
 void
 mem_init(void)
 {
-	uint32_t cr0;
+	uint32_t cr0,cr4;
 	size_t n;
 
 	cprintf("\n\n\n\n\n\n********** Frank's lab2 test interval(start of mem_init) ***********\n\n\n\n\n\n\n\n\n\n");
@@ -214,6 +214,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
+/*
 	for(i=0;i<(0xffffffff-KERNBASE)/PGSIZE;i++){
 		if(PTE_ADDR(*pgdir_walk(kern_pgdir,(void*)KERNBASE+i*PGSIZE,1)) != 0){
 			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
@@ -224,11 +225,17 @@ mem_init(void)
 			pa2page(PADDR((void*)KERNBASE+i*PGSIZE))->pp_ref--;
 		}
 		else{
-			page_insert(kern_pgdir,pa2page(PADDR((void*)KERNBASE)),(void*)KERNBASE,PTE_W);
+			page_insert(kern_pgdir,pa2page(PADDR((void*)KERNBASE+i*PGSIZE)),(void*)KERNBASE,PTE_W);
 			pa2page(PADDR((void*)KERNBASE))->pp_ref--;
 		}
 	}
-
+*/
+	boot_map_region_large(kern_pgdir,KERNBASE, ROUNDUP(npages*PGSIZE,PTSIZE),PADDR((void*)KERNBASE), PTE_W);
+	boot_map_region_large(kern_pgdir,KERNBASE+ROUNDUP(npages*PGSIZE,PTSIZE), ROUNDUP(0xffffffff-KERNBASE+1-ROUNDUP(npages*PGSIZE,PTSIZE),PTSIZE),PADDR((void*)KERNBASE), PTE_W);
+	cr4 = rcr4();
+	cprintf("cr4=%08x\n",cr4);
+	cr4 |= CR4_PSE;
+	lcr4(cr4);
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
 	cprintf("\nFrank checkpoint 2\n");
@@ -240,6 +247,8 @@ mem_init(void)
 	// If the machine reboots at this point, you've probably set up your
 	// kern_pgdir wrong.
 	lcr3(PADDR(kern_pgdir));
+
+	
 cprintf("\nFrank checkpoint 3\n");
 	check_page_free_list(0);
 	cprintf("\nFrank checkpoint 3\n");
@@ -448,6 +457,12 @@ static void
 boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+	assert(size%PTSIZE==0);
+	size_t add_interval=0;
+	for(;size;size-=PTSIZE,add_interval+=PTSIZE){
+		pde_t* pde_now=&pgdir[PDX((void*)(va+add_interval))];
+		*pde_now=PADDR(((void*)va+add_interval))|perm|PTE_P|PTE_PS;
+	}
 }
 
 //
