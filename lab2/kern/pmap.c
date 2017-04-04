@@ -103,9 +103,6 @@ boot_alloc(uint32_t n)
 	//
 	// LAB 2: Your code here.
 	result = nextfree;
-	// for (; n; n-= PGSIZE){
-	// 	nextfree += PGSIZE;
-	// }
 	nextfree = ROUNDUP(result + n, PGSIZE);
 
 	return result;
@@ -114,7 +111,7 @@ boot_alloc(uint32_t n)
 // Set up a two-level page table:
 //    kern_pgdir is its linear (virtual) address of the root
 //
-// This function only sets up the kernel part of the address space   //Frank: address [UTOP,KERNBASE)?
+// This function only sets up the kernel part of the address space 
 // (ie. addresses >= UTOP).  The user part of the address space
 // will be setup later.
 //
@@ -130,14 +127,10 @@ mem_init(void)
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
 
-	// Remove this line when you're ready to test this function.
-	//panic("mem_init: This function is not finished\n");
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
 	kern_pgdir = (pde_t *) boot_alloc(PGSIZE);
 	memset(kern_pgdir, 0, PGSIZE);
-	//Frank: why kern_pgdir can be set, boot_alloc i think just adjusts
-	//Frank: the position of nextfree but not truely allocates it from os.
 
 	//////////////////////////////////////////////////////////////////////
 	// Recursively insert PD in itself as a page table, to form
@@ -335,7 +328,6 @@ page_alloc(int alloc_flags)
 	struct Page *alloc_page=page_free_list;
 	page_free_list=alloc_page->pp_link;
 	alloc_page->pp_link=NULL;
-	//Frank:why not setting pp_ref here?
 	if (alloc_flags & ALLOC_ZERO){
 		memset(page2kva(alloc_page),0,PGSIZE);
 	}
@@ -558,7 +550,7 @@ page_remove(pde_t *pgdir, void *va)
 		return;
 	}
 	pte_t *addr_phy = 0;
-	struct Page *page_now = page_lookup(pgdir,va,&addr_phy);//pte_store?
+	struct Page *page_now = page_lookup(pgdir,va,&addr_phy);
 	page_decref(page_now);
 	*addr_phy=0;
 	tlb_invalidate(pgdir,va);
