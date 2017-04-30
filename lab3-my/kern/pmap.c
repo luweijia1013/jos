@@ -127,7 +127,7 @@ mem_init(void)
 	uint32_t cr0,cr4;
 	size_t n;
 
-	cprintf("\n\n\n\n\n\n********** Frank's lab2 test interval(start of mem_init) ***********\n\n\n\n\n\n\n\n\n\n");
+	cprintf("\n\n\n\n\n\n********** Frank's test interval(start of mem_init) ***********\n\n\n\n\n\n\n\n\n\n");
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
 
@@ -152,15 +152,14 @@ mem_init(void)
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
 
-//<<<<<<< HEAD
 
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
 	// LAB 3: Your code here.
-
-//=======
+	envs = (struct Env *)boot_alloc(NENV * sizeof(struct Env));
+	//lab2 code:
 	pages = (struct Page *)boot_alloc(npages * sizeof(struct Page));
-//>>>>>>> lab2
+
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -201,6 +200,13 @@ mem_init(void)
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
+	for(i=0;i<ROUNDUP(NENV*sizeof(struct Env),PGSIZE)/PGSIZE;i++){
+		if(PTE_ADDR(*pgdir_walk(kern_pgdir,(void*)UENVS+i*PGSIZE,1))!=0){
+			cprintf("Frank attention! page (%08x) has been allocated\n",UENVS + i*PGSIZE);
+			continue;
+		}
+		page_insert(kern_pgdir,pa2page(PADDR(envs+i*PGSIZE/sizeof(*envs))),(void*)UENVS+i*PGSIZE,PTE_U);
+	}
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
