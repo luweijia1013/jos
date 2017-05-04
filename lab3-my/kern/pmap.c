@@ -127,7 +127,7 @@ mem_init(void)
 	uint32_t cr0,cr4;
 	size_t n;
 
-	cprintf("\n\n\n\n\n\n********** Frank's test interval(start of mem_init) ***********\n\n\n\n\n\n\n\n\n\n");
+	cprintf("********** Frank: start of mem_init() ***********\n\n\n\n\n\n\n\n\n\n");
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
 
@@ -166,12 +166,16 @@ mem_init(void)
 	// memory management will go through the page_* functions. In
 	// particular, we can now map memory using boot_map_region
 	// or page_insert
+	cprikntf("before page_init()\n");
 	page_init();
+	cprintf("before page_init()\n");
 	check_page_free_list(1);
+cprintf("before page_init()\n");
 	check_page_alloc();
+cprintf("before page_init()\n");
 	check_page();
-	check_n_pages();
-	check_realloc_npages();
+	//check_n_pages();
+	//check_realloc_npages();
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -192,7 +196,7 @@ mem_init(void)
 		page_insert(kern_pgdir,pa2page(PADDR(pages+i*PGSIZE/sizeof(*pages))),(void*)UPAGES+i*PGSIZE,PTE_U);
 	}
 
-
+	cprintf("before setup envs' vm\n");
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
 	// (ie. perm = PTE_U | PTE_P).
