@@ -191,7 +191,6 @@ env_setup_vm(struct Env *e)
 
 	// LAB 3: Your code here.
 	e->env_pgdir = page2kva(p);
-	uint32_t i;
 	for(i = PDX(UTOP); i < NPDENTRIES; i++){
 		e->env_pgdir[i] = kern_pgdir[i];
 	}
@@ -283,10 +282,10 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
-	uint32_t i;
+	void* i;
 	for(i = ROUNDDOWN(va, PGSIZE); i < ROUNDUP(va + len, PGSIZE); i += PGSIZE){
 		struct Page *p = page_alloc(0);
-		page_insert(e->env_pgdir, p, (void *)i, PTE_U|PTE_W);
+		page_insert(e->env_pgdir, p, i, PTE_U|PTE_W);
 	}
 }
 
@@ -345,31 +344,31 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 
 	// LAB 3: Your code here.
 	struct Proghdr *ph, *eph;
-	if((struct Elf *)binary->e_magic != ELF_MAGIC){
+	if(((struct Elf *)binary)->e_magic != ELF_MAGIC){
 		panic("binary is not ELF!");
 	}
-	ph = (struct Proghdr *)(binary + (struct Elf *)binary->e_phoff);
-	eph = ph + (struct Elf *)binary->e_phnum;
+	ph = (struct Proghdr *)(binary + ((struct Elf *)binary)->e_phoff);
+	eph = ph + ((struct Elf *)binary)->e_phnum;
 	lcr3(PADDR(e->env_pgdir));
 	for(; ph<eph; ph++){
 		if(ph->p_type == ELF_PROG_LOAD){
 			//assume that no 2 segments will hit, region_alloc will not repeatedly alloc pages for one virtual page!
-			region_alloc(e, ph->p_va; ph->p_memsz);
+			region_alloc(e, (void*)ph->p_va, ph->p_memsz);
 			uint32_t i;
 			for(i = 0; i < ph->p_filesz; i++){
-				*(ph->p_va + i) = *(binary + ph->p_offset + i);//Frank: Elf also be loaded in e's vm?
+				*((uint8_t*)ph->p_va + i) = *(binary + ph->p_offset + i);//Frank: Elf also be loaded in e's vm?
 			}
 			for(i = ph->p_filesz; i < ph->p_memsz; i++){
-				*(ph->p_va + i) = 0;
+				*((uint8_t*)ph->p_va + i) = 0;
 			}
 		}
 	}
-	e->env_tf.tf_eip = (struct Elf *)binary->e_entry;
+	e->env_tf.tf_eip = ((struct Elf *)binary)->e_entry;
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 	// LAB 3: Your code here.
 	// Frank: e's region_alloc should only be called when lcr3(PADDR(e->env_pgdir))?
-	region_alloc(e, USTACKTOP - PGSIZE, PGSIZE);
+	region_alloc(e, (void*)USTACKTOP - PGSIZE, PGSIZE);
 	lcr3(PADDR(kern_pgdir));
 }
 
