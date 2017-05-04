@@ -166,7 +166,7 @@ mem_init(void)
 	// memory management will go through the page_* functions. In
 	// particular, we can now map memory using boot_map_region
 	// or page_insert
-	cprikntf("before page_init()\n");
+	cprintf("before page_init()\n");
 	page_init();
 	cprintf("before page_init()\n");
 	check_page_free_list(1);
@@ -193,10 +193,10 @@ cprintf("before page_init()\n");
 			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
 			continue;
 		}
-		page_insert(kern_pgdir,pa2page(PADDR(pages+i*PGSIZE/sizeof(*pages))),(void*)UPAGES+i*PGSIZE,PTE_U);
+		page_insert(kern_pgdir,pa2page(PADDR((void*)pages+i*PGSIZE)),(void*)UPAGES+i*PGSIZE,PTE_U);
 	}
 
-	cprintf("before setup envs' vm\n");
+	//cprintf("before setup envs' vm\n");
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
 	// (ie. perm = PTE_U | PTE_P).
@@ -209,7 +209,7 @@ cprintf("before page_init()\n");
 			cprintf("Frank attention! page (%08x) has been allocated\n",UENVS + i*PGSIZE);
 			continue;
 		}
-		page_insert(kern_pgdir,pa2page(PADDR(envs+i*PGSIZE/sizeof(*envs))),(void*)UENVS+i*PGSIZE,PTE_U);
+		page_insert(kern_pgdir,pa2page(PADDR((void*)envs+i*PGSIZE)),(void*)UENVS+i*PGSIZE,PTE_U);
 	}
 
 	//////////////////////////////////////////////////////////////////////
@@ -331,7 +331,7 @@ page_init(void)
 	extern char end[];
 	//cprintf("Frank test: %08lx - %08lx = %d ?\n",ROUNDUP((char*)end,PGSIZE),KERNBASE,(ROUNDUP((char*)end,PGSIZE)-KERNBASE));
 	//first use EXTPHYSMEM/PGSIZE+PGSIZE+npages*sizeof(), it's wrong because it forgets the part from EXTPHYSMEM to end (refers to the memory of kernel itself)
-	for(i=ROUNDUP((int)(ROUNDUP((char*)end,PGSIZE)-KERNBASE)+PGSIZE+npages*sizeof(struct Page),PGSIZE)/PGSIZE;i<npages;i++){
+	for(i=ROUNDUP((int)(ROUNDUP((char*)end,PGSIZE)-KERNBASE)+PGSIZE+npages*sizeof(struct Page)+NENV*sizeof(struct Env),PGSIZE)/PGSIZE;i<npages;i++){
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
