@@ -68,8 +68,8 @@ trap_init(void)
 	// LAB 3: Your code here.
 	int i;
 	for(i = 0;i < 20; i++){
-		struct Gatedesc gate = idt[i];
 		bool istrap = 0;//close interrupt
+		struct Gatedesc *gate=&idt[i];
 		uint16_t sel = GD_KT;
 		uint16_t dpl;
 		uint32_t off = trap_entry[i];
@@ -80,9 +80,11 @@ trap_init(void)
 			dpl = 0;
 		}
 		if(i!=9 && i!=15){
-			SETGATE(gate, istrap, sel, off, dpl);
+			SETGATE(*gate, istrap, sel, off, dpl);
 		}
 	}
+	// SETGATE(idt[0], 0, GD_KT, trap_entry[0], 0);
+
 	// Per-CPU setup 
 	trap_init_percpu();
 }
@@ -174,6 +176,7 @@ trap_dispatch(struct Trapframe *tf)
 void
 trap(struct Trapframe *tf)
 {
+cprintf("Frank into trap\n");
 	// The environment may have set DF and some versions
 	// of GCC rely on DF being clear
 	asm volatile("cld" ::: "cc");

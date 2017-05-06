@@ -93,6 +93,7 @@ trap_entry:
 	.long tp_en19
 
 
+
 .globl sysenter_handler;
 .type sysenter_handler, @function;
 .align 2;
