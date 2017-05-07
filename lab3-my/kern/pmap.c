@@ -143,7 +143,7 @@ mem_init(void)
 	// following two lines.)
 
 	// Permissions: kernel R, user R
-	kern_pgdir[PDX(UVPT)] = PADDR(kern_pgdir) | PTE_U | PTE_P;//Frank:don't understand!
+	kern_pgdir[PDX(UVPT)] = PADDR(kern_pgdir) | PTE_U | PTE_P;
 
 	//////////////////////////////////////////////////////////////////////
 	// Allocate an array of npages 'struct Page's and store it in 'pages'.
@@ -205,7 +205,7 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
-	boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, ROUNDUP(KSTKSIZE, PGSIZE), PADDR((void*)bootstack), PTE_W)
+	boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, ROUNDUP(KSTKSIZE, PGSIZE), PADDR((void*)bootstack), PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -285,7 +285,7 @@ page_init(void)
 	}
 	extern char end[];
 	//first use EXTPHYSMEM/PGSIZE+PGSIZE+npages*sizeof(), it's wrong because it forgets the part from EXTPHYSMEM to end (refers to the memory of kernel itself)
-	for(i=ROUNDUP((int)(ROUNDUP((char*)end,PGSIZE)-KERNBASE)+PGSIZE+npages*sizeof(struct Page)+NENV*sizeof(struct Env),PGSIZE)/PGSIZE;i<npages;i++){
+	for(i=PADDR(boot_alloc(0)) / PGSIZE; i < npages; i++){
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
