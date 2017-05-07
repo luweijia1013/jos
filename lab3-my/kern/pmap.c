@@ -625,11 +625,12 @@ int
 user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
-	void *curva;
-	for(curva = ROUNDDOWN(va, PGSIZE); curva < ROUNDUP(va + len, PGSIZE); curva += PGSIZE){
-		pte_t *pte_now = pgdir_walk(env->env_pgdir, curva, 0);
+	uintptr_t curva;
+	uintptr_t va_l = (uintptr_t) va + len - 1;
+	for(curva = (uintptr_t)va; curva <= va_l; curva = ROUNDDOWN(curva + PGSIZE, PGSIZE)){
+		pte_t *pte_now = pgdir_walk(env->env_pgdir,(void*)curva, 0);
 		if(pte_now == 0 || (*pte_now & perm) != perm){
-			user_mem_check_addr = curva<va ? va:curva;
+			user_mem_check_addr = curva;
 			return -E_FAULT;
 		}
 	}	
