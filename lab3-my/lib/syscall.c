@@ -18,7 +18,7 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 				 
                  //Lab 3: Your code here
 		 		 "movl %%esp,%%ebp\n\t"/*return esp*/
-                 "leal 999, %%esi\n\t"/*return pc*//*eax,edx,ecx,ebx,edi is reserved for pass arg.*/
+                 "leal 999f, %%esi\n\t"/*return pc*//*eax,edx,ecx,ebx,edi is reserved for pass arg.*/
                  "sysenter\n\t"
                  "999:\n\t"
 

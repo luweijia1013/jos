@@ -59,6 +59,7 @@ static const char *trapname(int trapno)
 }
 
 extern uint32_t trap_entry[];
+extern void sysenter_handler();
 
 void
 trap_init(void)
@@ -84,7 +85,9 @@ trap_init(void)
 		}
 	}
 	// SETGATE(idt[0], 0, GD_KT, trap_entry[0], 0);
-
+	wrmsr(0x174, GD_KT, 0);				/* SYSENTER_CS_MSR  */
+	wrmsr(0x175, KSTACKTOP, 0);			/* SYSENTER_ESP_MSR */
+	wrmsr(0x176, (uint32_t)sysenter_handler, 0);	/* SYSENTER_EIP_MSR */
 	// Per-CPU setup 
 	trap_init_percpu();
 }
