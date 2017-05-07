@@ -127,7 +127,7 @@ mem_init(void)
 	uint32_t cr0,cr4;
 	size_t n;
 
-	cprintf("********** Frank: start of mem_init() ***********\n\n\n\n\n\n\n\n\n\n");
+	cprintf("\n\n\n********** Frank: start of mem_init() ***********\n");
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
 
@@ -166,13 +166,9 @@ mem_init(void)
 	// memory management will go through the page_* functions. In
 	// particular, we can now map memory using boot_map_region
 	// or page_insert
-	cprintf("before page_init()\n");
 	page_init();
-	cprintf("before page_init()\n");
 	check_page_free_list(1);
-cprintf("before page_init()\n");
 	check_page_alloc();
-cprintf("before page_init()\n");
 	check_page();
 	//check_n_pages();
 	//check_realloc_npages();
@@ -187,16 +183,8 @@ cprintf("before page_init()\n");
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-	size_t i;
-	for(i=0;i<ROUNDUP(npages*sizeof(struct Page),PGSIZE)/PGSIZE;i++){
-		if(PTE_ADDR(*pgdir_walk(kern_pgdir,(void*)UPAGES+i*PGSIZE,1)) != 0){
-			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
-			continue;
-		}
-		page_insert(kern_pgdir,pa2page(PADDR((void*)pages+i*PGSIZE)),(void*)UPAGES+i*PGSIZE,PTE_U);
-	}
+	boot_map_region(kern_pgdir, UPAGES, ROUNDUP(npages * sizeof(struct Page), PGSIZE), PADDR((void*)pages), PTE_U);
 
-	//cprintf("before setup envs' vm\n");
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
 	// (ie. perm = PTE_U | PTE_P).
@@ -204,13 +192,7 @@ cprintf("before page_init()\n");
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
-	for(i=0;i<ROUNDUP(NENV*sizeof(struct Env),PGSIZE)/PGSIZE;i++){
-		if(PTE_ADDR(*pgdir_walk(kern_pgdir,(void*)UENVS+i*PGSIZE,1))!=0){
-			cprintf("Frank attention! page (%08x) has been allocated\n",UENVS + i*PGSIZE);
-			continue;
-		}
-		page_insert(kern_pgdir,pa2page(PADDR((void*)envs+i*PGSIZE)),(void*)UENVS+i*PGSIZE,PTE_U);
-	}
+	boot_map_region(kern_pgdir, UENVS, ROUNDUP(NENV * sizeof(struct Env), PGSIZE), PADDR((void*)envs), PTE_U);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -223,13 +205,7 @@ cprintf("before page_init()\n");
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
-	for(i=0;i<ROUNDUP(KSTKSIZE,PGSIZE)/PGSIZE;i++){
-		if(PTE_ADDR(*pgdir_walk(kern_pgdir,(void*)KSTACKTOP-KSTKSIZE+i*PGSIZE,1)) != 0){
-			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
-			continue;
-		}
-		page_insert(kern_pgdir,pa2page((physaddr_t)PADDR((void*)bootstack+i*PGSIZE)),(void*)KSTACKTOP-KSTKSIZE+i*PGSIZE,PTE_W);//Frank:bootstack area grows up or down?
-	}
+	boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, ROUNDUP(KSTKSIZE, PGSIZE), PADDR((void*)bootstack), PTE_W)
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -239,31 +215,13 @@ cprintf("before page_init()\n");
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-/*
-	for(i=0;i<(0xffffffff-KERNBASE)/PGSIZE;i++){
-		if(PTE_ADDR(*pgdir_walk(kern_pgdir,(void*)KERNBASE+i*PGSIZE,1)) != 0){
-			cprintf("Frank attention! page (%08x) has been allocated\n",UPAGES + i*PGSIZE);
-			continue;
-		}
-		if(i<npages){
-			page_insert(kern_pgdir,pa2page(PADDR((void*)KERNBASE+i*PGSIZE)),(void*)KERNBASE+i*PGSIZE,PTE_W);
-			pa2page(PADDR((void*)KERNBASE+i*PGSIZE))->pp_ref--;
-		}
-		else{
-			page_insert(kern_pgdir,pa2page(PADDR((void*)KERNBASE+i*PGSIZE)),(void*)KERNBASE,PTE_W);
-			pa2page(PADDR((void*)KERNBASE))->pp_ref--;
-		}
-	}
-*/
 	boot_map_region_large(kern_pgdir,KERNBASE, ROUNDUP(npages*PGSIZE,PTSIZE),PADDR((void*)KERNBASE), PTE_W);
 	boot_map_region_large(kern_pgdir,KERNBASE+ROUNDUP(npages*PGSIZE,PTSIZE), ROUNDUP(0xffffffff-KERNBASE+1-ROUNDUP(npages*PGSIZE,PTSIZE),PTSIZE),PADDR((void*)KERNBASE), PTE_W);
 	cr4 = rcr4();
-	cprintf("cr4=%08x\n",cr4);
 	cr4 |= CR4_PSE;
 	lcr4(cr4);
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
-	cprintf("\nFrank checkpoint 2\n");
 	// Switch from the minimal entry page directory to the full kern_pgdir
 	// page table we just created.	Our instruction pointer should be
 	// somewhere between KERNBASE and KERNBASE+4MB right now, which is
@@ -274,9 +232,7 @@ cprintf("before page_init()\n");
 	lcr3(PADDR(kern_pgdir));
 
 	
-cprintf("\nFrank checkpoint 3\n");
 	check_page_free_list(0);
-	cprintf("\nFrank checkpoint 3\n");
 	// entry.S set the really important flags in cr0 (including enabling
 	// paging).  Here we configure the rest of the flags that we care about.
 	cr0 = rcr0();
@@ -286,7 +242,6 @@ cprintf("\nFrank checkpoint 3\n");
 
 	// Some more checks, only possible after kern_pgdir is installed.
 	check_page_installed_pgdir();
-	cprintf("\nFrank checkpoint 4\n");
 }
 
 // --------------------------------------------------------------
@@ -329,7 +284,6 @@ page_init(void)
 		page_free_list = &pages[i];
 	}
 	extern char end[];
-	//cprintf("Frank test: %08lx - %08lx = %d ?\n",ROUNDUP((char*)end,PGSIZE),KERNBASE,(ROUNDUP((char*)end,PGSIZE)-KERNBASE));
 	//first use EXTPHYSMEM/PGSIZE+PGSIZE+npages*sizeof(), it's wrong because it forgets the part from EXTPHYSMEM to end (refers to the memory of kernel itself)
 	for(i=ROUNDUP((int)(ROUNDUP((char*)end,PGSIZE)-KERNBASE)+PGSIZE+npages*sizeof(struct Page)+NENV*sizeof(struct Env),PGSIZE)/PGSIZE;i<npages;i++){
 		pages[i].pp_ref = 0;
@@ -907,13 +861,10 @@ static physaddr_t
 check_va2pa(pde_t *pgdir, uintptr_t va)
 {
 	pte_t *p;
-	//cprintf("\n Frank test: va=%08x\n",va );
 	pgdir = &pgdir[PDX(va)];
-	//cprintf("\n Frank test: pgdir=%08x\n",*pgdir );
 	if (!(*pgdir & PTE_P))
 		return ~0;
 	p = (pte_t*) KADDR(PTE_ADDR(*pgdir));
-	//cprintf("\n Frank test: p=%08x\n",p[PTX(va)] );
 	if (!(p[PTX(va)] & PTE_P))
 		return ~0;
 	return PTE_ADDR(p[PTX(va)]);
@@ -945,8 +896,6 @@ check_page(void)
 	assert((pp0 = page_alloc(0)));
 	assert((pp1 = page_alloc(0)));
 	assert((pp2 = page_alloc(0)));
-	//cprintf("\n Frank check_page() start!!\n\n\n");
-	//cprintf("\n Frank test: pp0=%08x,pp1=%08x,pp2=%08x\n",pp0,pp1,pp2);
 	assert(pp0);
 	assert(pp1 && pp1 != pp0);
 	assert(pp2 && pp2 != pp1 && pp2 != pp0);
@@ -962,15 +911,11 @@ check_page(void)
 	assert(page_lookup(kern_pgdir, (void *) 0x0, &ptep) == NULL);
 	// there is no free memory, so we can't allocate a page table
 	assert(page_insert(kern_pgdir, pp1, 0x0, PTE_W) < 0);
-	//cprintf("\n Frank test: pp0=%08x,pp1=%08x,pp2=%08x\n",pp0,pp1,pp2);
 
 	// free pp0 and try again: pp0 should be used for page table
 	page_free(pp0);
 	assert(page_insert(kern_pgdir, pp1, 0x0, PTE_W) == 0);
-	//cprintf("\n Frank test: %08x=%08x\n",pp0,pa2page(PADDR(pgdir_walk(kern_pgdir,0x0,0))));
-	//cprintf("\n Frank test: %08x = %08x\n",PTE_ADDR(kern_pgdir[0]),page2pa(pp0)); //why physics address here 3ff000(about 4M but at the top of all phymem allocated which should be about 64M)
 	assert(PTE_ADDR(kern_pgdir[0]) == page2pa(pp0));
-	//cprintf("\n Frank test: %08x = %08x\n",check_va2pa(kern_pgdir, 0x0),page2pa(pp1));
 	assert(check_va2pa(kern_pgdir, 0x0) == page2pa(pp1));
 	assert(pp1->pp_ref == 1);
 	assert(pp0->pp_ref == 1);

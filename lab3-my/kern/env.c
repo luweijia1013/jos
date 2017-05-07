@@ -356,7 +356,7 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 			region_alloc(e, (void*)ph->p_va, ph->p_memsz);
 			uint32_t i;
 			for(i = 0; i < ph->p_filesz; i++){
-				*((uint8_t*)ph->p_va + i) = *(binary + ph->p_offset + i);//Frank: Elf also be loaded in e's vm?
+				*((uint8_t*)ph->p_va + i) = *(binary + ph->p_offset + i);
 			}
 			for(i = ph->p_filesz; i < ph->p_memsz; i++){
 				*((uint8_t*)ph->p_va + i) = 0;
