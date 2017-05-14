@@ -58,6 +58,7 @@ static const char *trapname(int trapno)
 	return "(unknown trap)";
 }
 
+extern uint32_t trap_entry[];
 
 void
 trap_init(void)
@@ -65,7 +66,23 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
-
+	int i;
+	for(i = 0;i < 20; i++){
+		struct Gatedesc gate = idt[i];
+		bool istrap = 0;//close interrupt
+		uint16_t sel = GD_KT;
+		uint16_t dpl;
+		uint32_t off = trap_entry[i];
+		if(i == 3){
+			dpl = 3;
+		}
+		else{
+			dpl = 0;
+		}
+		if(i!=9 && i!=15){
+			SETGATE(gate, istrap, sel, off, dpl);
+		}
+	}
 	// Per-CPU setup 
 	trap_init_percpu();
 }

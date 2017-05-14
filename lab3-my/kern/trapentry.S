@@ -46,7 +46,51 @@
 /*
  * Lab 3: Your code here for generating entry points for the different traps.
  */
+TRAPHANDLER_NOEC(tp_en0,T_DIVIDE);
+TRAPHANDLER_NOEC(tp_en1,T_DEBUG);
+TRAPHANDLER_NOEC(tp_en2,T_NMI);
+TRAPHANDLER_NOEC(tp_en3,T_BRKPT);
+TRAPHANDLER_NOEC(tp_en4,T_OFLOW);
+TRAPHANDLER_NOEC(tp_en5,T_BOUND);
+TRAPHANDLER_NOEC(tp_en6,T_ILLOP);
+TRAPHANDLER_NOEC(tp_en7,T_DEVICE);
+TRAPHANDLER(tp_en8,T_DBLFLT);
+TRAPHANDLER_NOEC(tp_en9,9);
+TRAPHANDLER(tp_en10,T_TSS);
+TRAPHANDLER(tp_en11,T_SEGNP);
+TRAPHANDLER(tp_en12,T_STACK);
+TRAPHANDLER(tp_en13,T_GPFLT);
+TRAPHANDLER(tp_en14,T_PGFLT);
+TRAPHANDLER_NOEC(tp_en15,15);
+TRAPHANDLER_NOEC(tp_en16,T_FPERR);
+TRAPHANDLER(tp_en17,T_ALIGN);
+TRAPHANDLER_NOEC(tp_en18,T_MCHK);
+TRAPHANDLER_NOEC(tp_en19,T_SIMDERR);
 
+
+.data
+.globl trap_entry
+trap_entry:
+	.long tp_en0
+	.long tp_en1
+	.long tp_en2
+	.long tp_en3
+	.long tp_en4
+	.long tp_en5
+	.long tp_en6
+	.long tp_en7
+	.long tp_en8
+	.long tp_en9
+	.long tp_en10
+	.long tp_en11
+	.long tp_en12
+	.long tp_en13
+	.long tp_en14
+	.long tp_en15
+	.long tp_en16
+	.long tp_en17
+	.long tp_en18
+	.long tp_en19
 
 
 .globl sysenter_handler;
@@ -61,4 +105,14 @@ sysenter_handler:
 /*
  * Lab 3: Your code here for _alltraps
  */
+_alltraps:
+	pushl %ds
+	pushl %es
+	pushal
+	pushl $GD_KD
+	pushl $GD_KD
+	popl %ds
+	popl %es
+	pushl %esp
+	call trap
 
