@@ -7,15 +7,20 @@ static inline int32_t
 syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
 {
 	int32_t ret;
-	asm volatile("pushl %%ecx\n\t"
+	asm volatile(
+		 "pushl %%ecx\n\t"
 		 "pushl %%edx\n\t"
-	         "pushl %%ebx\n\t"
+	     "pushl %%ebx\n\t"
 		 "pushl %%esp\n\t"
 		 "pushl %%ebp\n\t"
 		 "pushl %%esi\n\t"
 		 "pushl %%edi\n\t"
 				 
                  //Lab 3: Your code here
+		 		 "movl %%esp,%%ebp\n\t"
+                 "leal 999f, %%esi\n\t"/*eax,edx,ecx,ebx,edi is reserved for pass arg.*/
+                 "sysenter\n\t"
+                 "999:\n\t"
 
                  "popl %%edi\n\t"
                  "popl %%esi\n\t"
