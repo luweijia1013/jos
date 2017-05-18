@@ -11,6 +11,7 @@
 #include <kern/env.h>
 #include <kern/trap.h>
 
+void enable_sep();
 
 void
 i386_init(void)
@@ -34,6 +35,8 @@ i386_init(void)
 	// Lab 3 user environment initialization functions
 	env_init();
 	trap_init();
+	//MSR set
+	enable_sep();
 
 #if defined(TEST)
 	// Don't touch -- used by grading script!
@@ -45,6 +48,13 @@ i386_init(void)
 
 	// We only have one user environment for now, so just run it.
 	env_run(&envs[0]);
+}
+
+extern void sysenter_handler; //why extern here(about extern),why kstacktop
+void enable_sep(){
+	wrmsr(0x174, GD_KT, 0);				/* SYSENTER_CS_MSR  */
+	wrmsr(0x175, KSTACKTOP, 0);			/* SYSENTER_ESP_MSR */
+	wrmsr(0x176, sysenter_handler, 0);	/* SYSENTER_EIP_MSR */	
 }
 
 

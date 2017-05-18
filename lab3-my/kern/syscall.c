@@ -69,7 +69,7 @@ sys_map_kernel_page(void* kpage, void* va)
 	int r;
 	struct Page* p = pa2page(PADDR(kpage));
 	if(p ==NULL)
-		return E_INVAL;
+		return -E_INVAL;
 	r = page_insert(curenv->env_pgdir, p, va, PTE_U | PTE_W);
 	return r;
 }
@@ -88,7 +88,27 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// Call the function corresponding to the 'syscallno' parameter.
 	// Return any appropriate return value.
 	// LAB 3: Your code here.
-
-	panic("syscall not implemented");
+	if(syscallno >= NSYSCALLS){
+		return -E_INVAL;
+	}
+	if(syscallno == SYS_cputs){
+		sys_cputs((const char*)a1, a2);
+		return 0;//return what?
+	}
+	if(syscallno == SYS_cgetc){
+		return sys_cgetc();
+	}
+	if(syscallno == SYS_getenvid){
+		return sys_getenvid();
+	}
+	if(syscallno == SYS_env_destroy){
+		return sys_env_destroy(a1);
+	}
+	if(syscallno == SYS_map_kernel_page){
+		return sys_map_kernel_page((void*)a1, (void*)a2);
+	}
+	if(syscallno == SYS_sbrk){
+		return sys_sbrk(a1);
+	}
 }
 
