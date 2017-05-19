@@ -107,7 +107,7 @@ sysenter_handler:
 	pushl %ecx
 	pushl %edx
 	pushl %eax
- 	pushw $GD_KD	/* why here */
+ 	pushw $GD_KD
  	pushw $GD_KD
  	popw %ds
  	popw %es
@@ -127,10 +127,10 @@ _alltraps:
 	pushl %ds
 	pushl %es
 	pushal
-	pushl $GD_KD
-	pushl $GD_KD
-	popl %ds
-	popl %es
+	pushw $GD_KD
+	pushw $GD_KD
+	popw %ds
+	popw %es
 	pushl %esp
 	call trap
 

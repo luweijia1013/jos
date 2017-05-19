@@ -50,7 +50,6 @@ i386_init(void)
 	env_run(&envs[0]);
 }
 
-extern void sysenter_handler(); //why extern here(about extern),why kstacktop
 void enable_sep(){
 	
 }
