@@ -81,6 +81,7 @@ static int
 sys_sbrk(uint32_t inc)
 {
 	// LAB3: your code sbrk here...
+	//Frank:how to deal with the collision of heap and stack (or library)?
 	uint32_t start,end,i;
 	start = curenv->env_heapbrk;
 	end = start + inc;
@@ -104,7 +105,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	}
 	if(syscallno == SYS_cputs){
 		sys_cputs((const char*)a1, a2);
-		return 0;//return what?
+		return 0;
 	}
 	if(syscallno == SYS_cgetc){
 		return sys_cgetc();
