@@ -369,7 +369,7 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	// LAB 3: Your code here.
 	// Frank: e's region_alloc should only be called when lcr3(PADDR(e->env_pgdir))?
 	region_alloc(e, (void*)USTACKTOP - PGSIZE, PGSIZE);
-	e->env_heapsize = PGSIZE;
+	e->env_heapbrk = PGSIZE - 1;
 	lcr3(PADDR(kern_pgdir));
 }
 
