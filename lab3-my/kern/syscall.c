@@ -74,11 +74,20 @@ sys_map_kernel_page(void* kpage, void* va)
 	return r;
 }
 
+#define PGUSE(x) ((x + PGSIZE - 1) / PGSIZE)
+
 static int
 sys_sbrk(uint32_t inc)
 {
 	// LAB3: your code sbrk here...
-	return 0;
+	uint32_t start,end,i;
+	start = curenv->env_heapsize;
+	end = start + inc;
+	for(i = PGUSE(start); i < PGUSE(end); i++){
+		region_alloc(curenv, (void*)USTACKTOP - (i + 1) * PGSIZE, PGSIZE);
+	}
+	curenv->env_heapsize = end;
+	return end;
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
