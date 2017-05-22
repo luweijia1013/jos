@@ -86,9 +86,9 @@ sys_sbrk(uint32_t inc)
 	end = start + inc;
 	for(i = PGUSE(start); i < PGUSE(end); i++){
 		struct Page *p = page_alloc(0);
-		page_insert(curenv->env_pgdir, p, (void*)USTACKTOP - (i + 1) * PGSIZE, PTE_U|PTE_W);
+		page_insert(curenv->env_pgdir, p, (void*)UTEXT + i * PGSIZE, PTE_U|PTE_W);
 	}
-	curenv->env_heapsize = end;
+	curenv->env_heapbrk = end;
 	return end;
 }
 

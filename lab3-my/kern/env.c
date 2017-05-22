@@ -235,6 +235,9 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_type = ENV_TYPE_USER;
 	e->env_status = ENV_RUNNABLE;
 	e->env_runs = 0;
+	e->env_heapbrk = UTEXT;
+	struct Page *p = page_alloc(0);
+	page_insert(e->env_pgdir, p, (void*)UTEXT, PTE_U|PTE_W);
 
 	// Clear out all the saved register state,
 	// to prevent the register values
@@ -369,7 +372,6 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	// LAB 3: Your code here.
 	// Frank: e's region_alloc should only be called when lcr3(PADDR(e->env_pgdir))?
 	region_alloc(e, (void*)USTACKTOP - PGSIZE, PGSIZE);
-	e->env_heapbrk = PGSIZE - 1;
 	lcr3(PADDR(kern_pgdir));
 }
 
