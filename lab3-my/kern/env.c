@@ -199,11 +199,13 @@ env_setup_vm(struct Env *e)
 	// Permissions: kernel R, user R
 	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_P | PTE_U;
 	// UTEXT maps first page of the user heap
-	region_alloc(e, (void*)UTEXT, PGSIZE)
+	p = page_alloc(0);
+	page_insert(e->env_pgdir, p, (void*)UTEXT, PTE_U|PTE_W);
 	// UTOP maps first(last from memory's perspective) page of the user stack
 	// as described in OS assignment page, thish should be done in load_icode
 	// but i think it should be done here
-	region_alloc(e, (void*)USTACKTOP - PGSIZE, PGSIZE);
+	p = page_alloc(0);
+	page_insert(e->env_pgdir, p, (void*)USTACKTOP - PGSIZE, PTE_U|PTE_W);
 
 	return 0;
 }
