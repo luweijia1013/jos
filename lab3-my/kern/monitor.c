@@ -26,9 +26,9 @@ static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "backtrace", "Display function backtrace", mon_backtrace },
-	{ "c", "continue execution", mon_continue},
-	{ "si", "excute the code instruction by instruction", mon_stepinstruction},
-	{ "x", "display the memory", mon_diplaymem}
+//	{ "c", "continue execution", mon_continue},
+//	{ "si", "excute the code instruction by instruction", mon_stepinstruction},
+	{ "x", "display the memory", mon_displaymem}
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -61,13 +61,15 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
-int mon_diplaymem(int argc, char **argv, struct Trapframe *tf){
+int
+mon_displaymem(int argc, char **argv, struct Trapframe *tf){
 	if(argc != 2){
 		cprintf("correct format should be \"x 0x...\"\n");
 		return 0;
 	}
 	uint32_t memaddr = strtol(argv[argc-1],NULL,16);
-	cprintf("%d",*(int*)memaddr);
+	cprintf("%d\n",*(int*)memaddr);
+	return 0;
 }
 
 
