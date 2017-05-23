@@ -75,7 +75,7 @@ sys_map_kernel_page(void* kpage, void* va)
 }
 
 //for the env_heapbrk = x, PGUSE(x) means the number of allocated pages.
-#define PGUSE(x) (x / PGSIZE) + 1
+#define PGUSE(x) x == 0 ? 0 : ((x - 1 ) / PGSIZE) + 1
 
 static int
 sys_sbrk(uint32_t inc)
@@ -85,9 +85,9 @@ sys_sbrk(uint32_t inc)
 	uint32_t start,end,i;
 	start = curenv->env_heapbrk;
 	end = start + inc;
-	for(i = PGUSE(start); i < PGUSE(end); i++){
+	for(i = 0; i < PGUSE(end) - PGUSE(start); i++){
 		struct Page *p = page_alloc(0);
-		page_insert(curenv->env_pgdir, p, (void*)UTEXT + i * PGSIZE, PTE_U|PTE_W);
+		page_insert(curenv->env_pgdir, p, ROUNDUP((void*)start,PGSIZE) + i * PGSIZE, PTE_U|PTE_W);
 	}
 	curenv->env_heapbrk = end;
 	return end;

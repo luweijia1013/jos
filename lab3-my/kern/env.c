@@ -198,9 +198,6 @@ env_setup_vm(struct Env *e)
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
 	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_P | PTE_U;
-	// UTEXT maps first page of the user heap
-	p = page_alloc(0);
-	page_insert(e->env_pgdir, p, (void*)UTEXT, PTE_U|PTE_W);
 	// UTOP maps first(last from memory's perspective) page of the user stack
 	// as described in OS assignment page, thish should be done in load_icode
 	// but i think it should be done here
@@ -243,7 +240,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_type = ENV_TYPE_USER;
 	e->env_status = ENV_RUNNABLE;
 	e->env_runs = 0;
-	e->env_heapbrk = UTEXT;
+	e->env_heapbrk = UTEXT;//should be changed after load_icode
 
 	// Clear out all the saved register state,
 	// to prevent the register values
@@ -372,7 +369,10 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 			}
 		}
 	}
+	uint32_t elfsize = 0;
+	//Frank : elfsize should be count here
 	e->env_tf.tf_eip = ((struct Elf *)binary)->e_entry;
+	e->env_heapbrk = UTEXT + elfsize;
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 	// LAB 3: Your code here.
