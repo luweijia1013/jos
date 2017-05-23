@@ -9,14 +9,11 @@ umain(int argc, char **argv)
 	int i;
 	uint32_t start, end;
 	char *s;
-
 	start = sys_sbrk(0);
 	end = sys_sbrk(ALLOCATE_SIZE);
-
 	if (end - start < ALLOCATE_SIZE) {
 		cprintf("sbrk not correctly implemented\n");
 	}
-
 	s = (char *) start;
 	for ( i = 0; i < STRING_SIZE; i++) {
 		s[i] = 'A' + (i % 26);

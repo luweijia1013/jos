@@ -367,12 +367,10 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 			for(i = ph->p_filesz; i < ph->p_memsz; i++){
 				*((uint8_t*)ph->p_va + i) = 0;
 			}
+		e->env_heapbrk = ph->p_va + ph->p_memsz;
 		}
 	}
-	uint32_t elfsize = 0;
-	//Frank : elfsize should be count here
 	e->env_tf.tf_eip = ((struct Elf *)binary)->e_entry;
-	e->env_heapbrk = UTEXT + elfsize;
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 	// LAB 3: Your code here.
