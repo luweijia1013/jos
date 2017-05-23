@@ -12,7 +12,7 @@ check_page_installed_pgdir() succeeded!
 [00000000] new env 00001000
 Incoming TRAP frame at 0xefbfffbc
 [00001000] user fault va f010000a ip 00800037
-TRAP frame at 0xf019f000
+TRAP frame at 0xf01a0000
   edi  0x00000000
   esi  0x00000000
   ebp  0xeebfdfc8

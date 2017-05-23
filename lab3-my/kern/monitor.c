@@ -11,6 +11,7 @@
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
 #include <kern/trap.h>
+#include <kern/env.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -71,7 +72,9 @@ mon_stepinstruction(int argc, char **argv, struct Trapframe *tf){
 int
 mon_continue(int argc, char **argv, struct Trapframe *tf){
 	// -1 makes while break so that monitor() return
-	return -1;
+	//return -1;
+	tf->tf_eflags &= ~FL_TF;
+	env_pop_tf(tf);
 }
 
 int
