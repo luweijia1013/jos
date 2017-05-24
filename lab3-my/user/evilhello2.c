@@ -33,6 +33,9 @@ sgdt(struct Pseudodesc* gdtd)
 	__asm __volatile("sgdt %0" :  "=m" (*gdtd));
 }
 
+char gdtmap[PGSIZE];
+struct Segdesc *gdt;
+struct Segdesc ori;
 //my wrapper fun of evil(but how to pass arguments like gdt,ori and func_ptr evil)
 void my_evil(){
 	evil();
@@ -41,8 +44,6 @@ void my_evil(){
 	asm volatile("lret");
 }
 
-struct Segdesc *gdt;
-struct Segdesc ori;
 // Invoke a given function pointer with ring0 privilege, then return to ring3
 void ring0_call(void (*fun_ptr)(void)) {
     // Here's some hints on how to achieve this.
@@ -59,21 +60,22 @@ void ring0_call(void (*fun_ptr)(void)) {
     //        file if necessary.
 
     // Lab3 : Your Code Here
-    struct Pseudodesc *gdtd;
-    //struct Segdesc gdt[4096]={0};
+    struct Pseudodesc gdtd;
     char respage[PGSIZE];//avoid conflict between user original page and map page.
-    char gdtmap[PGSIZE];
-    sgdt(gdtd);
+    //char gdtmap[PGSIZE]; //seems can't be here, why?
+    sgdt(&gdtd);
     //uint32_t i,pi = 0;
     //for(i = ROUNDDOWN(gdtd->pd_base, PGSIZE); i < ROUNDUP(gdtd->pd_base + gdtd->pd_limit, PGSIZE); i += PGSIZE, pi++){
-    	sys_map_kernel_page((void*) gdtd->pd_base, gdtmap)；
+    	sys_map_kernel_page((void*) gdtd.pd_base, (void*)gdtmap);
     //}
-    uint32_t gdtpginit = ROUNDDOWN(gdtmap, PGSIZE);
-    uint32_t gdtpgoff = gdtd->pd_base - ROUNDDOWN(gdtd->pd_base);
-    uint32_t gdtaddr = gdtpginit + gdtpginit;
+    uint32_t gdtpginit = ROUNDDOWN((uint32_t)gdtmap, PGSIZE);
+//	cprintf("github %08x = my %08x ?\n",(uint32_t)(PGNUM(gdtmap)<<PTXSHIFT),ROUNDDOWN((uint32_t)gdtmap,PGSIZE));
+    uint32_t gdtpgoff = gdtd.pd_base - ROUNDDOWN(gdtd.pd_base, PGSIZE);
+//	cprintf("github %08x = my %08x ?\n",PGOFF(gdtd.pd_base),gdtd.pd_base-ROUNDDOWN(gdtd.pd_base,PGSIZE));
+    uint32_t gdtaddr = gdtpginit + gdtpgoff;
     gdt = (struct Segdesc *)gdtaddr;
     ori = gdt[GD_UD>>3];
-    SETCALLGATE(gdt[GD_UD], GD_KT, my_evil, 3);
+    SETCALLGATE(*((struct Gatedesc*)(&gdt[GD_UD>>3])), GD_KT, my_evil, 3);
 	asm volatile("lcall $0x20, $0");
 }
 
