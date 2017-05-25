@@ -170,6 +170,10 @@ trap_dispatch(struct Trapframe *tf)
 		page_fault_handler(tf);
 		return;
 	}
+	if(tf->tf_trapno == T_BRKPT){
+		break_point_handler(tf);
+		return;
+	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
@@ -239,5 +243,10 @@ page_fault_handler(struct Trapframe *tf)
 		curenv->env_id, fault_va, tf->tf_eip);
 	print_trapframe(tf);
 	env_destroy(curenv);
+}
+
+void 
+break_point_handler(struct Trapframe *tf){
+	monitor(tf);
 }
 
