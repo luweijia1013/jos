@@ -1,0 +1,9 @@
+6828 decimal is 015254 octal!
+
+
+
+********** Frank: start of mem_init() ***********
+Physical memory: 66556K available, base = 640K, extended = 65532K
+kernel panic on CPU 0 at kern/pmap.c:751: assertion failed: page2pa(pp) != MPENTRY_PADDR
+Welcome to the JOS kernel monitor!
+Type 'help' for a list of commands.
