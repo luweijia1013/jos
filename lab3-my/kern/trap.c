@@ -84,7 +84,6 @@ trap_init(void)
 			SETGATE(*gate, istrap, sel, off, dpl);
 		}
 	}
-	// SETGATE(idt[0], 0, GD_KT, trap_entry[0], 0);
 	wrmsr(0x174, GD_KT, 0);				/* SYSENTER_CS_MSR  */
 	wrmsr(0x175, KSTACKTOP, 0);			/* SYSENTER_ESP_MSR */
 	wrmsr(0x176, (uint32_t)sysenter_handler, 0);	/* SYSENTER_EIP_MSR */

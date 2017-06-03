@@ -518,10 +518,12 @@ env_run(struct Env *e)
 		}
 		curenv->env_status = ENV_RUNNABLE;
 	}
-	curenv = e;
+	if(curenv!=e){
+		curenv = e;
+		curenv->env_runs++;
+		lcr3(PADDR(e->env_pgdir));
+	}
 	curenv->env_status = ENV_RUNNING;
-	curenv->env_runs++;
-	lcr3(PADDR(e->env_pgdir));
 	env_pop_tf(&(e->env_tf));
 }
 
