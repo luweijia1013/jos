@@ -33,6 +33,7 @@ sgdt(struct Pseudodesc* gdtd)
 	__asm __volatile("sgdt %0" :  "=m" (*gdtd));
 }
 
+char respage[PGSIZE];//avoid conflict between user original page and map page.
 char gdtmap[PGSIZE];
 struct Segdesc *gdt;
 struct Segdesc ori;
@@ -61,17 +62,10 @@ void ring0_call(void (*fun_ptr)(void)) {
 
     // Lab3 : Your Code Here
     struct Pseudodesc gdtd;
-    char respage[PGSIZE];//avoid conflict between user original page and map page.
-    //char gdtmap[PGSIZE]; //seems can't be here, why?
     sgdt(&gdtd);
-    //uint32_t i,pi = 0;
-    //for(i = ROUNDDOWN(gdtd->pd_base, PGSIZE); i < ROUNDUP(gdtd->pd_base + gdtd->pd_limit, PGSIZE); i += PGSIZE, pi++){
-    	sys_map_kernel_page((void*) gdtd.pd_base, (void*)gdtmap);
-    //}
+    sys_map_kernel_page((void*) gdtd.pd_base, (void*)gdtmap);
     uint32_t gdtpginit = ROUNDDOWN((uint32_t)gdtmap, PGSIZE);
-//	cprintf("github %08x = my %08x ?\n",(uint32_t)(PGNUM(gdtmap)<<PTXSHIFT),ROUNDDOWN((uint32_t)gdtmap,PGSIZE));
     uint32_t gdtpgoff = gdtd.pd_base - ROUNDDOWN(gdtd.pd_base, PGSIZE);
-//	cprintf("github %08x = my %08x ?\n",PGOFF(gdtd.pd_base),gdtd.pd_base-ROUNDDOWN(gdtd.pd_base,PGSIZE));
     uint32_t gdtaddr = gdtpginit + gdtpgoff;
     gdt = (struct Segdesc *)gdtaddr;
     ori = gdt[GD_UD>>3];
