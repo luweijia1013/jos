@@ -125,18 +125,6 @@ trap_init_percpu(void)
 	//
 	// LAB 4: Your code here:
 
-	/*int i;
-	//Frank: NCPU or ncpu?
-	for(i = 0; i < NCPU; i++){
-		cpus[i].cpu_ts.ts_esp0 = KSTACKTOP - i * (KSTKSIZE + KSTKGAP);
-		cpus[i].cpu_ts.ts_ss0 = GD_KD;
-
-		gdt[GD_TSS0 >> 3 + i] = SEG16(STS_T32A, (uint32_t) (&cpus[i].cpu_ts),
-					sizeof(struct Taskstate), 0);
-		gdt[GD_TSS0 >> 3 + i].sd_s = 0;
-		ltr(GD_TSS0 + 8 * i);
-
-	}*/
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
 	thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - thiscpu->cpu_id * (KSTKSIZE + KSTKGAP);
@@ -261,6 +249,7 @@ trap(struct Trapframe *tf)
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
 		// LAB 4: Your code here.
+		lock_kernel();
 		assert(curenv);
 
 		// Garbage collect if current enviroment is a zombie

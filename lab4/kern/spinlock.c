@@ -68,7 +68,8 @@ __spin_initlock(struct spinlock *lk, char *name)
 	lk->locked = 0;
 #else
 	//LAB 4: Your code here
-
+	lk->own = 1;
+	lk->next = 0;
 #endif
 
 #ifdef DEBUG_SPINLOCK
@@ -97,6 +98,10 @@ spin_lock(struct spinlock *lk)
 		asm volatile ("pause");
 #else
 	//LAB 4: Your code here
+	unsigned thisticket = atomic_return_and_add(&lk->next, 1);
+	while(thisticket == lk->own){
+		asm volatile ("pause");
+	}
 
 #endif
 
@@ -149,5 +154,6 @@ spin_unlock(struct spinlock *lk)
 	xchg(&lk->locked, 0);
 #else
 	//LAB 4: Your code here
+	atomic_return_and_add(&lk->own, 1);
 #endif
 }

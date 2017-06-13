@@ -113,8 +113,8 @@ sysenter_handler:
  	popw %ds
  	popw %es
 	call syscall
-	pushw $GD_UD
- 	pushw $GD_UD
+	pushw $GD_UD|3
+ 	pushw $GD_UD|3
  	popw %ds
  	popw %es
 	movl %ebp,%ecx
