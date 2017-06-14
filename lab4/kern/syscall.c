@@ -11,6 +11,7 @@
 #include <kern/syscall.h>
 #include <kern/console.h>
 #include <kern/sched.h>
+#include <kern/spinlock.h>
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -298,7 +299,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// Call the function corresponding to the 'syscallno' parameter.
 	// Return any appropriate return value.
 	// LAB 3: Your code here.
-	lock_kernel();
+	//lock_kernel();
 	//Frank: I think here should lock_kernel() as it is called by sysenter not trap.
 	switch(syscallno){
 		case SYS_cputs:{
@@ -320,8 +321,9 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		case SYS_page_alloc:{
 			//return sys_page_alloc()
 		}
-		case SYS_yeild:{
-			return sys_yield();
+		case SYS_yield:{
+			sys_yield();
+			return 0;
 		}
 		case SYS_sbrk:{
 			return sys_sbrk(a1);
@@ -332,3 +334,12 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	}
 }
 
+void
+syscall_manager(struct Trapframe *tf){
+	lock_kernel();
+	curenv->env_tf = *tf;
+	tf = &curenv->env_tf;
+	tf->tf_regs.reg_eax = 
+		syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, 0);
+	env_run(curenv);
+}
