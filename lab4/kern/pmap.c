@@ -221,11 +221,7 @@ mem_init(void)
 	// Initialize the SMP-related parts of the memory map
 	mem_init_mp();
 
-	boot_map_region_large(kern_pgdir,KERNBASE, ROUNDUP(npages*PGSIZE,PTSIZE),PADDR((void*)KERNBASE), PTE_W);
-	boot_map_region_large(kern_pgdir,KERNBASE+ROUNDUP(npages*PGSIZE,PTSIZE), ROUNDUP(0xffffffff-KERNBASE+1-ROUNDUP(npages*PGSIZE,PTSIZE),PTSIZE),PADDR((void*)KERNBASE), PTE_W);
-	cr4 = rcr4();
-	cr4 |= CR4_PSE;
-	lcr4(cr4);
+	boot_map_region(kern_pgdir,KERNBASE, IOMEMBASE - KERNBASE,PADDR((void*)KERNBASE), PTE_W);
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
 	// Switch from the minimal entry page directory to the full kern_pgdir
@@ -885,13 +881,11 @@ check_kern_pgdir(void)
 	}
 
 
-
-
 	
 	// check IO mem (new in lab 4)
 	for (i = IOMEMBASE; i < -PGSIZE; i += PGSIZE)
 		assert(check_va2pa(pgdir, i) == i);
-
+	
 	// check kernel stack
 	// (updated in lab 4 to check per-CPU kernel stacks)
 	for (n = 0; n < NCPU; n++) {
