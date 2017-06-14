@@ -68,7 +68,7 @@ __spin_initlock(struct spinlock *lk, char *name)
 	lk->locked = 0;
 #else
 	//LAB 4: Your code here
-	lk->own = 1;
+	lk->own = 0;
 	lk->next = 0;
 #endif
 
@@ -99,10 +99,10 @@ spin_lock(struct spinlock *lk)
 #else
 	//LAB 4: Your code here
 	unsigned thisticket = atomic_return_and_add(&lk->next, 1);
-	while(thisticket == lk->own){
+	volatile unsigned* own_addr = &lk->own;
+	while(thisticket != *own_addr){
 		asm volatile ("pause");
 	}
-
 #endif
 
 	// Record info about lock acquisition for debugging.
