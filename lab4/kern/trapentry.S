@@ -107,8 +107,8 @@ sysenter_handler:
 	pushfl
 	pushl $GD_UT|3
 	pushl %esi
-	pushl 0
-	pushl 0
+	pushl $0
+	pushl $0
 	pushl %ds
 	pushl %es
 	pushal
@@ -117,7 +117,7 @@ sysenter_handler:
  	popw %ds
  	popw %es
 	pushl %esp
-	call syscall_manager //will not return
+	call syscall_manager /*will not return*/
 	popl %esp
 	popal
 	popl %es

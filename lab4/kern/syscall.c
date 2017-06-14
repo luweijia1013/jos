@@ -301,7 +301,6 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// LAB 3: Your code here.
 	//lock_kernel();
 	//Frank: I think here should lock_kernel() as it is called by sysenter not trap.
-	cprintf("SYSCALL KERNEL REACH!\n");
 	switch(syscallno){
 		case SYS_cputs:{
 			sys_cputs((const char*)a1, a2);
