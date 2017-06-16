@@ -55,6 +55,7 @@ holding(struct spinlock *lock)
 	return lock->locked && lock->cpu == thiscpu;
 #else
 	//LAB 4: Your code here
+	//Frank: no use now for ticket spinlock
 	panic("ticket spinlock: not implemented yet");
 
 #endif

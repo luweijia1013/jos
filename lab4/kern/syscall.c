@@ -298,28 +298,37 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// Call the function corresponding to the 'syscallno' parameter.
 	// Return any appropriate return value.
 	// LAB 3: Your code here.
-	if(syscallno >= NSYSCALLS){
-		return -E_INVAL;
+	lock_kernel();
+	//Frank: I think here should lock_kernel() as it is called by sysenter not trap.
+	switch(syscallno){
+		case SYS_cputs:{
+			sys_cputs((const char*)a1, a2);
+			return 0;
+		}
+		case SYS_cgetc:{
+			return sys_cgetc();
+		}
+		case SYS_getenvid:{
+			return sys_getenvid();
+		}
+		case SYS_env_destroy:{
+			return sys_env_destroy(a1);
+		}
+		case SYS_map_kernel_page:{
+			return sys_map_kernel_page((void*)a1, (void*)a2);
+		}
+		case SYS_page_alloc:{
+			//return sys_page_alloc()
+		}
+		case SYS_yeild:{
+			return sys_yield();
+		}
+		case SYS_sbrk:{
+			return sys_sbrk(a1);
+		}
+		default:{
+			return -E_INVAL;
+		}
 	}
-	if(syscallno == SYS_cputs){
-		sys_cputs((const char*)a1, a2);
-		return 0;
-	}
-	if(syscallno == SYS_cgetc){
-		return sys_cgetc();
-	}
-	if(syscallno == SYS_getenvid){
-		return sys_getenvid();
-	}
-	if(syscallno == SYS_env_destroy){
-		return sys_env_destroy(a1);
-	}
-	if(syscallno == SYS_map_kernel_page){
-		return sys_map_kernel_page((void*)a1, (void*)a2);
-	}
-	if(syscallno == SYS_sbrk){
-		return sys_sbrk(a1);
-	}
-	return -E_INVAL;
 }
 
