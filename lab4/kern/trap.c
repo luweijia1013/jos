@@ -91,9 +91,7 @@ trap_init(void)
 			SETGATE(*gate, istrap, sel, off, dpl);
 		}
 	}
-	wrmsr(0x174, GD_KT, 0);				/* SYSENTER_CS_MSR  */
-	wrmsr(0x175, KSTACKTOP, 0);			/* SYSENTER_ESP_MSR */
-	wrmsr(0x176, (uint32_t)sysenter_handler, 0);	/* SYSENTER_EIP_MSR */
+	
 	// Per-CPU setup 
 	trap_init_percpu();
 }
@@ -127,6 +125,10 @@ trap_init_percpu(void)
 
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
+	wrmsr(0x174, GD_KT, 0);				/* SYSENTER_CS_MSR  */
+	wrmsr(0x175, KSTACKTOP - thiscpu->cpu_id * (KSTKSIZE + KSTKGAP), 0);			/* SYSENTER_ESP_MSR */
+	wrmsr(0x176, (uint32_t)sysenter_handler, 0);	/* SYSENTER_EIP_MSR */
+
 	thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - thiscpu->cpu_id * (KSTKSIZE + KSTKGAP);
 	thiscpu->cpu_ts.ts_ss0 = GD_KD;
 

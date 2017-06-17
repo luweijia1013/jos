@@ -4,14 +4,14 @@
 #include <kern/pmap.h>
 #include <kern/monitor.h>
 
-
+static int yieldtimes = 0;
 // Choose a user environment to run and run it.
 void
 sched_yield(void)
 {
 	struct Env *idle;
 	int i;
-
+	cprintf("SCHED_YIELD CALLED %d TIMES\n", yieldtimes++);
 	// Implement simple round-robin scheduling.
 	//
 	// Search through 'envs' for an ENV_RUNNABLE environment in
